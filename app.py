@@ -13,11 +13,18 @@ import streamlit as st
 
 from dotenv import load_dotenv
 load_dotenv()
-
+import os
 from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableParallel, RunnableLambda, RunnablePassthrough
+for _key in ("MISTRAL_API_KEY"):
+    if not os.getenv(_key):
+        try:
+            if _key in st.secrets:
+                os.environ[_key] = st.secrets[_key]
+        except Exception:
+            pass 
 
 # ---------------------------------------------------------------------------
 # Page setup
