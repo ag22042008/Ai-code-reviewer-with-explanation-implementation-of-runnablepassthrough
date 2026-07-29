@@ -6,8 +6,9 @@ logic from the original script. Everything else on this page is UI.
 """
 
 import time
+import textwrap
 import concurrent.futures
-import os
+
 import streamlit as st
 
 from dotenv import load_dotenv
@@ -17,13 +18,7 @@ from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableParallel, RunnableLambda, RunnablePassthrough
-for _key in ("MISTRAL_API_KEY"):
-    if not os.getenv(_key):
-        try:
-            if _key in st.secrets:
-                os.environ[_key] = st.secrets[_key]
-        except Exception:
-            pass
+
 # ---------------------------------------------------------------------------
 # Page setup
 # ---------------------------------------------------------------------------
@@ -65,7 +60,7 @@ pipeline = build_pipeline()
 # Theme (café / order-ticket aesthetic)
 # ---------------------------------------------------------------------------
 st.markdown(
-    """
+    textwrap.dedent("""\
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -158,7 +153,7 @@ st.markdown(
 
       .java-footer { text-align:center; color: var(--muted-dark); font-size: 0.78rem; margin-top: 2rem; }
     </style>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -166,11 +161,11 @@ st.markdown(
 # Header
 # ---------------------------------------------------------------------------
 st.markdown(
-    """
+    textwrap.dedent("""\
     <div class="java-header"><span class="cup">☕</span><h1>Order a Java</h1></div>
     <p class="java-tagline">Describe it. We brew it. Java, on the house. &nbsp;·&nbsp;
     house pipeline: LangChain × Mistral</p>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
