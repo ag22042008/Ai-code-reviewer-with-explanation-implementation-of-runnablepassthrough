@@ -6,7 +6,6 @@ logic from the original script. Everything else on this page is UI.
 """
 
 import time
-import textwrap
 import concurrent.futures
 
 import streamlit as st
@@ -59,101 +58,97 @@ pipeline = build_pipeline()
 # ---------------------------------------------------------------------------
 # Theme (café / order-ticket aesthetic)
 # ---------------------------------------------------------------------------
+_CSS = """
+:root {
+  --espresso: #2b1b12;
+  --espresso-deep: #1c110a;
+  --paper: #f5ead8;
+  --caramel: #c77d34;
+  --rust: #a13d2b;
+  --muted: #a4917d;
+  --muted-dark: #6f5a47;
+}
+.stApp {
+  background: var(--espresso);
+  color: #f5ead8;
+}
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+/* header */
+.java-header { display:flex; align-items:flex-end; gap:0.8rem; margin-bottom: 0.25rem; }
+.java-header .cup { font-size: 2.1rem; }
+.java-header h1 {
+  font-family: 'Fraunces', serif; font-weight: 700;
+  font-size: 2rem; margin: 0; color: #f5ead8;
+}
+.java-tagline { color: var(--muted); font-size: 0.9rem; margin: 0.15rem 0 1.5rem 0; }
+/* menu card */
+.menu-card {
+  background: var(--paper); color: var(--espresso);
+  border-radius: 8px; padding: 1.4rem 1.5rem; border: 1px dashed rgba(43,27,18,0.2);
+}
+.menu-card .eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--rust);
+}
+.menu-card h3 { font-family: 'Fraunces', serif; margin: 0.2rem 0 1rem 0; font-size: 1.25rem; }
+/* textarea */
+.stTextArea textarea {
+  background: #fffaf0 !important; color: var(--espresso) !important;
+  border: 1.5px solid rgba(43,27,18,0.2) !important; border-radius: 4px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+/* button */
+.stButton>button {
+  background: var(--caramel); color: #fffaf0; border: none; border-radius: 4px;
+  font-weight: 600; padding: 0.55rem 1.4rem; width: 100%;
+  transition: background 0.15s ease;
+}
+.stButton>button:hover { background: var(--rust); color: #fffaf0; }
+/* tabs -> look like ticket tabs */
+.stTabs [data-baseweb="tab-list"] { gap: 0.35rem; }
+.stTabs [data-baseweb="tab"] {
+  background: rgba(245,234,216,0.06); color: var(--muted);
+  border-radius: 6px 6px 0 0; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.stTabs [aria-selected="true"] { background: var(--paper) !important; color: var(--espresso) !important; }
+/* ticket body */
+.ticket-panel {
+  background: var(--paper); color: var(--espresso); border-radius: 0 6px 6px 6px;
+  padding: 1.4rem 1.5rem 1.6rem; position: relative; min-height: 380px;
+}
+.ticket-panel::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 10px;
+  background-image: radial-gradient(circle at 10px 0, var(--espresso) 5px, transparent 5.5px);
+  background-size: 20px 10px; background-repeat: repeat-x; border-radius: 0 6px 0 0;
+}
+.ticket-head {
+  display:flex; justify-content:space-between; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted-dark);
+  border-bottom: 1px dashed rgba(43,27,18,0.25); padding-bottom: 0.55rem; margin-bottom: 0.9rem;
+}
+.stamp {
+  display:inline-block; font-family:'Fraunces', serif; font-weight:700; font-size:0.95rem;
+  letter-spacing:0.1em; color: var(--rust); border: 3px solid var(--rust); border-radius: 6px;
+  padding: 0.15rem 0.55rem; transform: rotate(-9deg); opacity: 0.8; margin-left: 0.6rem;
+}
+.empty-state { text-align:center; color: var(--muted); padding: 3rem 1rem; }
+.empty-state .icon { font-size: 2rem; opacity: 0.5; }
+code, pre { font-family: 'JetBrains Mono', monospace !important; }
+.java-footer { text-align:center; color: var(--muted-dark); font-size: 0.78rem; margin-top: 2rem; }
+"""
+
+# Strip blank lines and any leading whitespace from every line before injecting.
+# Markdown treats a blank line as the end of a raw-HTML block and 4+ leading
+# spaces as a code block, so either one left in here causes the CSS to be
+# printed as literal text instead of being applied as a stylesheet.
+_CSS_CLEAN = "\n".join(line.strip() for line in _CSS.strip().splitlines() if line.strip())
+
 st.markdown(
-    textwrap.dedent("""\
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --espresso: #2b1b12;
-        --espresso-deep: #1c110a;
-        --paper: #f5ead8;
-        --caramel: #c77d34;
-        --rust: #a13d2b;
-        --muted: #a4917d;
-        --muted-dark: #6f5a47;
-      }
-
-      .stApp {
-        background: var(--espresso);
-        color: #f5ead8;
-      }
-
-      html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-
-      /* header */
-      .java-header { display:flex; align-items:flex-end; gap:0.8rem; margin-bottom: 0.25rem; }
-      .java-header .cup { font-size: 2.1rem; }
-      .java-header h1 {
-        font-family: 'Fraunces', serif; font-weight: 700;
-        font-size: 2rem; margin: 0; color: #f5ead8;
-      }
-      .java-tagline { color: var(--muted); font-size: 0.9rem; margin: 0.15rem 0 1.5rem 0; }
-
-      /* menu card */
-      .menu-card {
-        background: var(--paper); color: var(--espresso);
-        border-radius: 8px; padding: 1.4rem 1.5rem; border: 1px dashed rgba(43,27,18,0.2);
-      }
-      .menu-card .eyebrow {
-        font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
-        letter-spacing: 0.14em; text-transform: uppercase; color: var(--rust);
-      }
-      .menu-card h3 { font-family: 'Fraunces', serif; margin: 0.2rem 0 1rem 0; font-size: 1.25rem; }
-
-      /* textarea */
-      .stTextArea textarea {
-        background: #fffaf0 !important; color: var(--espresso) !important;
-        border: 1.5px solid rgba(43,27,18,0.2) !important; border-radius: 4px !important;
-        font-family: 'Inter', sans-serif !important;
-      }
-
-      /* button */
-      .stButton>button {
-        background: var(--caramel); color: #fffaf0; border: none; border-radius: 4px;
-        font-weight: 600; padding: 0.55rem 1.4rem; width: 100%;
-        transition: background 0.15s ease;
-      }
-      .stButton>button:hover { background: var(--rust); color: #fffaf0; }
-
-      /* tabs -> look like ticket tabs */
-      .stTabs [data-baseweb="tab-list"] { gap: 0.35rem; }
-      .stTabs [data-baseweb="tab"] {
-        background: rgba(245,234,216,0.06); color: var(--muted);
-        border-radius: 6px 6px 0 0; font-family: 'JetBrains Mono', monospace;
-        font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
-      }
-      .stTabs [aria-selected="true"] { background: var(--paper) !important; color: var(--espresso) !important; }
-
-      /* ticket body */
-      .ticket-panel {
-        background: var(--paper); color: var(--espresso); border-radius: 0 6px 6px 6px;
-        padding: 1.4rem 1.5rem 1.6rem; position: relative; min-height: 380px;
-      }
-      .ticket-panel::before {
-        content: ""; position: absolute; top: 0; left: 0; right: 0; height: 10px;
-        background-image: radial-gradient(circle at 10px 0, var(--espresso) 5px, transparent 5.5px);
-        background-size: 20px 10px; background-repeat: repeat-x; border-radius: 0 6px 0 0;
-      }
-      .ticket-head {
-        display:flex; justify-content:space-between; font-family: 'JetBrains Mono', monospace;
-        font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted-dark);
-        border-bottom: 1px dashed rgba(43,27,18,0.25); padding-bottom: 0.55rem; margin-bottom: 0.9rem;
-      }
-      .stamp {
-        display:inline-block; font-family:'Fraunces', serif; font-weight:700; font-size:0.95rem;
-        letter-spacing:0.1em; color: var(--rust); border: 3px solid var(--rust); border-radius: 6px;
-        padding: 0.15rem 0.55rem; transform: rotate(-9deg); opacity: 0.8; margin-left: 0.6rem;
-      }
-
-      .empty-state { text-align:center; color: var(--muted); padding: 3rem 1rem; }
-      .empty-state .icon { font-size: 2rem; opacity: 0.5; }
-
-      code, pre { font-family: 'JetBrains Mono', monospace !important; }
-
-      .java-footer { text-align:center; color: var(--muted-dark); font-size: 0.78rem; margin-top: 2rem; }
-    </style>
-    """),
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700'
+    '&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">'
+    f"<style>{_CSS_CLEAN}</style>",
     unsafe_allow_html=True,
 )
 
@@ -161,11 +156,9 @@ st.markdown(
 # Header
 # ---------------------------------------------------------------------------
 st.markdown(
-    textwrap.dedent("""\
-    <div class="java-header"><span class="cup">☕</span><h1>Order a Java</h1></div>
-    <p class="java-tagline">Describe it. We brew it. Java, on the house. &nbsp;·&nbsp;
-    house pipeline: LangChain × Mistral</p>
-    """),
+    '<div class="java-header"><span class="cup">☕</span><h1>Order a Java</h1></div>'
+    '<p class="java-tagline">Describe it. We brew it. Java, on the house. &nbsp;·&nbsp; '
+    'house pipeline: LangChain × Mistral</p>',
     unsafe_allow_html=True,
 )
 
