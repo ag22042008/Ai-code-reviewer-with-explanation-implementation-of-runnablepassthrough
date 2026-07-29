@@ -163,7 +163,9 @@ st.markdown(
 )
 
 if "order" not in st.session_state:
-    st.session_state.order = None  # holds {"code": ..., "explanation": ...}
+    st.session_state.order = None  # holds {"topic", "code", "explanation", "time"}
+if "history" not in st.session_state:
+    st.session_state.history = []  # list of past orders, most recent first
 
 col1, col2 = st.columns([1, 1.6], gap="large")
 
@@ -182,9 +184,33 @@ with col1:
         height=140,
         label_visibility="collapsed",
     )
-    brew_clicked = st.button("Brew it ☕", use_container_width=True)
+    brew_col, clear_col = st.columns([2, 1])
+    with brew_col:
+        brew_clicked = st.button("Brew it ☕", use_container_width=True)
+    with clear_col:
+        clear_clicked = st.button("Clear", use_container_width=True)
     st.caption("Every order runs the same house recipe: generate the code, then explain it in plain words.")
     st.markdown("</div>", unsafe_allow_html=True)
+
+    if clear_clicked:
+        st.session_state.order = None
+        st.rerun()
+
+    if st.session_state.history:
+        with st.expander(f"Order history ({len(st.session_state.history)})"):
+            for idx, past in enumerate(st.session_state.history):
+                hcol, bcol = st.columns([3, 1])
+                with hcol:
+                    st.caption(f"{past['time']} · {past['topic'][:60]}")
+                with bcol:
+                    if st.button("Reorder", key=f"reorder_{idx}", use_container_width=True):
+                        st.session_state.order = past
+                        st.rerun()
+
+            if st.button("Clear history", use_container_width=True):
+                st.session_state.history = []
+                st.session_state.order = None
+                st.rerun()
 
 # ---------------------------------------------------------------------------
 # Handle the order
@@ -210,11 +236,15 @@ if brew_clicked:
                 time.sleep(1.1)
             try:
                 result = future.result()
-                st.session_state.order = {
+                new_order = {
+                    "topic": topic,
                     "code": result["code"],
                     "explanation": result["explanation"],
                     "time": time.strftime("%H:%M"),
                 }
+                st.session_state.order = new_order
+                st.session_state.history.insert(0, new_order)
+                st.session_state.history = st.session_state.history[:10]
             except Exception as exc:
                 st.session_state.order = None
                 status_ph.error(f"The machine jammed: {exc}")
