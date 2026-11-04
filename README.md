@@ -1,27 +1,29 @@
-# Order a Java — Streamlit edition
+# ☕ Order a Java — AI Code Generator & Explainer (Streamlit Edition)
 
-Same café-ticket concept as before, this time as a Streamlit app. The
-pipeline in `app.py` (model, prompts, chains) is untouched from your
-original script — it's cached with `@st.cache_resource` so it's built
-once per session, and called with the same `pipeline.invoke({"topic": ...})`.
+An interactive, café-themed Streamlit application that generates concise Java code for any problem statement and provides a step-by-step explanation. Built using **LangChain (`RunnablePassthrough`, `RunnableParallel`)** and **Google Gemini (`langchain-google-genai`)**.
 
-## Run it
+---
 
-```bash
-pip install -r requirements.txt
-cp .env.example .env   # then put your real key in .env
-streamlit run app.py
-```
+## 🏗️ Architecture & Pipeline Flow
 
-It'll open at http://localhost:8501
+The underlying LCEL (LangChain Expression Language) pipeline processes the topic in sequential and parallel steps:
 
-## What you get
+```mermaid
+graph TD
+    A[User Input: Topic] --> B[code_prompt]
+    B --> C[ChatGoogleGenerativeAI: gemini-1.5-flash]
+    C --> D[StrOutputParser]
+    D --> E[Generated Java Code]
 
-- A "menu card" on the left to describe the Java code you want
-- A real-time "brewing" status (grinding → pulling the shot → steaming →
-  plating) while the two Mistral calls run in the background
-- The result on the right as an order ticket with two tabs:
-  **Ticket** (the generated code, with Streamlit's built-in copy button)
-  and **Barista's Notes** (the plain-words explanation)
-- A dark espresso / warm paper theme set both via `.streamlit/config.toml`
-  and custom CSS injected in `app.py`
+    E --> F[RunnableParallel Step]
+
+    subgraph Parallel Execution
+        F --> G[RunnablePassthrough: Preserves Raw Code]
+        F --> H[explain_prompt]
+        H --> I[ChatGoogleGenerativeAI: gemini-1.5-flash]
+        I --> J[StrOutputParser: Code Explanation]
+    end
+
+    G --> K["Final Output Object: { code, explanation }"]
+    J --> K
+    K --> L[Streamlit UI Render]
