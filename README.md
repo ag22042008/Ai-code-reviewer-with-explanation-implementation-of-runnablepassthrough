@@ -26,12 +26,4 @@ graph TD
 
     G --> K["Final Output Object: { code, explanation }"]
     J --> K
-    K --> L[Streamlit UI Render]📁 Repository & Project Structure
-Plaintext
-.
-├── app.py                 # Streamlit web application with cached LangChain pipeline & UI
-├── runnablepassthrough.py  # Standalone CLI script for testing the pipeline
-├── requirements.txt       # Project dependencies
-├── .env.example           # Environment variable template
-└── README.md              # Complete p
-    
+    K --> L[Streamlit UI Render]
